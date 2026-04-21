@@ -403,12 +403,12 @@ export default function PoultryDashboard() {
 
   if (isBootstrapping) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-md items-center px-4 py-8">
-        <div className="w-full rounded-[2rem] bg-[rgba(255,252,246,0.88)] p-6 shadow-[0_24px_60px_rgba(33,37,23,0.16)]">
-          <p className="text-sm uppercase tracking-[0.22em] text-[rgba(26,33,19,0.56)]">
+      <main className="mx-auto flex min-h-screen max-w-sm items-center px-3 py-5">
+        <div className="w-full rounded-[1.8rem] bg-[rgba(255,252,246,0.88)] p-5 shadow-[0_20px_50px_rgba(33,37,23,0.14)]">
+          <p className="text-[13px] uppercase tracking-[0.2em] text-[rgba(26,33,19,0.56)]">
             Loading dashboard
           </p>
-          <h1 className="display-heading mt-3 text-4xl text-[var(--primary)]">
+          <h1 className="display-heading mt-3 text-[2.5rem] text-[var(--primary)]">
             Gaikwad Poultry
           </h1>
           <div className="mt-6 space-y-3">
@@ -422,22 +422,22 @@ export default function PoultryDashboard() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-md px-3 py-3 sm:px-4 sm:py-5">
-      <div className="rounded-[2rem] border border-white/55 bg-[rgba(255,252,246,0.84)] shadow-[var(--shadow)] backdrop-blur">
-        <header className="rounded-t-[2rem] bg-[linear-gradient(180deg,#16381a_0%,#204925_100%)] px-5 pb-5 pt-5 text-white">
+    <main className="mx-auto min-h-screen max-w-sm px-2.5 py-2.5 sm:px-3 sm:py-4">
+      <div className="rounded-[1.8rem] border border-white/55 bg-[rgba(255,252,246,0.84)] shadow-[var(--shadow)] backdrop-blur">
+        <header className="rounded-t-[1.8rem] bg-[linear-gradient(180deg,#16381a_0%,#204925_100%)] px-4 pb-4 pt-4 text-white">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white/70">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/70">
                 Poultry orders
               </p>
-              <h1 className="display-heading mt-2 text-4xl leading-none">
+              <h1 className="display-heading mt-2 text-[2.35rem] leading-none">
                 Gaikwad Poultry
               </h1>
-              <p className="mt-2 text-sm text-white/74">{todayLabel}</p>
+              <p className="mt-2 text-[13px] text-white/74">{todayLabel}</p>
             </div>
 
             <button
-              className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/84"
+              className="rounded-full border border-white/15 bg-white/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/84"
               disabled={isBusy}
               onClick={handleLogout}
               type="button"
@@ -446,14 +446,14 @@ export default function PoultryDashboard() {
             </button>
           </div>
 
-          <section className="mt-5 rounded-[1.75rem] bg-[rgba(255,255,255,0.1)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+          <section className="mt-4 rounded-[1.45rem] bg-[rgba(255,255,255,0.1)] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm text-white/72">Today&apos;s rate</p>
-                <strong className="mt-2 block text-4xl font-medium text-white">
+                <p className="text-[13px] text-white/72">Today&apos;s rate</p>
+                <strong className="mt-1.5 block text-[2.35rem] font-medium text-white">
                   {currentRateLabel}
                 </strong>
-                <p className="mt-2 text-xs uppercase tracking-[0.16em] text-white/58">
+                <p className="mt-2 text-[10px] uppercase tracking-[0.14em] text-white/58">
                   {payload?.currentRate
                     ? `Updated ${formatChartDate(payload.currentRate.effectiveDate)}`
                     : "Add a rate to start taking orders"}
@@ -465,6 +465,7 @@ export default function PoultryDashboard() {
               <label className="flex-1">
                 <span className="sr-only">Rate per kg</span>
                 <input
+                  className="min-h-11 rounded-[1rem] px-3.5 text-[14px]"
                   inputMode="decimal"
                   onChange={(event) =>
                     setRateDraft({
@@ -476,7 +477,7 @@ export default function PoultryDashboard() {
                 />
               </label>
               <button
-                className="min-h-[52px] rounded-2xl bg-white px-4 text-sm font-semibold text-[var(--primary)] disabled:opacity-60"
+                className="min-h-11 rounded-[1rem] bg-white px-3.5 text-[13px] font-semibold text-[var(--primary)] disabled:opacity-60"
                 disabled={isBusy}
                 type="submit"
               >
@@ -486,13 +487,13 @@ export default function PoultryDashboard() {
           </section>
         </header>
 
-        <nav className="grid grid-cols-4 gap-1 border-b border-[var(--border)] bg-[rgba(255,254,249,0.92)] px-2 py-2">
+        <nav className="grid grid-cols-4 gap-1 border-b border-[var(--border)] bg-[rgba(255,254,249,0.92)] px-2 py-1.5">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
 
             return (
               <button
-                className={`rounded-2xl px-2 py-3 text-center text-sm font-medium transition ${
+                className={`rounded-[1rem] px-1.5 py-2 text-center text-[13px] font-medium transition ${
                   isActive
                     ? "bg-[rgba(24,61,29,0.1)] text-[var(--primary)]"
                     : "text-[rgba(26,33,19,0.66)]"
@@ -509,7 +510,7 @@ export default function PoultryDashboard() {
 
         {banner ? (
           <div
-            className={`mx-4 mt-4 rounded-2xl border px-4 py-3 text-sm ${
+            className={`mx-3.5 mt-3 rounded-[1rem] border px-3.5 py-2.5 text-[13px] ${
               banner.tone === "success"
                 ? "border-[rgba(34,108,71,0.16)] bg-[rgba(34,108,71,0.09)] text-[var(--success)]"
                 : "border-[rgba(187,79,67,0.16)] bg-[rgba(187,79,67,0.08)] text-[var(--danger)]"
@@ -519,18 +520,18 @@ export default function PoultryDashboard() {
           </div>
         ) : null}
 
-        <section className="px-4 pb-28 pt-4">
+        <section className="px-3.5 pb-5 pt-3.5">
           {activeTab === "new-order" ? (
             <div className="space-y-5">
-              <section className="rounded-[1.8rem] border border-[var(--border)] bg-[var(--surface)] p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[rgba(26,33,19,0.52)]">
+              <section className="rounded-[1.45rem] border border-[var(--border)] bg-[var(--surface)] p-3.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[rgba(26,33,19,0.52)]">
                   Quick picks
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {frequentShops.length ? (
                     frequentShops.map((shop) => (
                       <button
-                        className={`rounded-full border px-4 py-2 text-sm font-medium ${
+                        className={`rounded-full border px-3 py-1.5 text-[12px] font-medium ${
                           orderDraft.shopId === shop.id
                             ? "border-[var(--primary)] bg-[var(--primary)] text-white"
                             : "border-[rgba(24,61,29,0.12)] bg-white text-[var(--primary)]"
@@ -548,7 +549,7 @@ export default function PoultryDashboard() {
                       </button>
                     ))
                   ) : (
-                    <p className="text-sm text-[rgba(26,33,19,0.64)]">
+                    <p className="text-[13px] text-[rgba(26,33,19,0.64)]">
                       Add shops first to unlock quick ordering.
                     </p>
                   )}
@@ -557,10 +558,11 @@ export default function PoultryDashboard() {
 
               <form className="space-y-4" onSubmit={submitOrder}>
                 <label className="block">
-                  <span className="mb-2 block text-sm font-medium text-[rgba(26,33,19,0.72)]">
+                  <span className="mb-2 block text-[13px] font-medium text-[rgba(26,33,19,0.72)]">
                     Select shop
                   </span>
                   <select
+                    className="min-h-11 rounded-[1rem] px-3.5 text-[14px]"
                     onChange={(event) =>
                       setOrderDraft((current) => ({
                         ...current,
@@ -578,10 +580,11 @@ export default function PoultryDashboard() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-sm font-medium text-[rgba(26,33,19,0.72)]">
+                  <span className="mb-2 block text-[13px] font-medium text-[rgba(26,33,19,0.72)]">
                     Quantity (kg)
                   </span>
                   <input
+                    className="min-h-11 rounded-[1rem] px-3.5 text-[14px]"
                     inputMode="decimal"
                     onChange={(event) =>
                       setOrderDraft((current) => ({
@@ -595,10 +598,11 @@ export default function PoultryDashboard() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-sm font-medium text-[rgba(26,33,19,0.72)]">
+                  <span className="mb-2 block text-[13px] font-medium text-[rgba(26,33,19,0.72)]">
                     Notes (optional)
                   </span>
                   <textarea
+                    className="rounded-[1rem] px-3.5 py-3 text-[14px]"
                     onChange={(event) =>
                       setOrderDraft((current) => ({
                         ...current,
@@ -610,20 +614,20 @@ export default function PoultryDashboard() {
                   />
                 </label>
 
-                <section className="rounded-[1.75rem] bg-[linear-gradient(135deg,rgba(223,233,201,0.84),rgba(255,247,223,0.96))] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[rgba(26,33,19,0.48)]">
+                <section className="rounded-[1.45rem] bg-[linear-gradient(135deg,rgba(223,233,201,0.84),rgba(255,247,223,0.96))] p-3.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[rgba(26,33,19,0.48)]">
                     Order total
                   </p>
                   <div className="mt-3 flex items-end justify-between gap-4">
                     <div>
-                      <p className="text-sm text-[rgba(26,33,19,0.68)]">
+                      <p className="text-[13px] text-[rgba(26,33,19,0.68)]">
                         {selectedShop ? selectedShop.name : "Select a shop"}
                       </p>
-                      <strong className="mt-1 block text-4xl text-[var(--primary)]">
+                      <strong className="mt-1 block text-[2rem] text-[var(--primary)]">
                         {formatCurrency(liveTotal)}
                       </strong>
                     </div>
-                    <div className="text-right text-sm text-[rgba(26,33,19,0.62)]">
+                    <div className="text-right text-[12px] text-[rgba(26,33,19,0.62)]">
                       <p>{currentRateLabel}</p>
                       <p>{formatKg(orderDraft.quantityKg || 0)}</p>
                     </div>
@@ -631,7 +635,7 @@ export default function PoultryDashboard() {
                 </section>
 
                 <button
-                  className="min-h-14 w-full rounded-2xl bg-[var(--primary)] px-5 text-base font-semibold text-white disabled:opacity-60"
+                  className="min-h-11 w-full rounded-[1rem] bg-[var(--primary)] px-5 text-[14px] font-semibold text-white disabled:opacity-60"
                   disabled={isBusy || !shops.length}
                   type="submit"
                 >
@@ -666,19 +670,19 @@ export default function PoultryDashboard() {
 
                     return (
                       <article
-                        className="rounded-[1.8rem] border border-[var(--border)] bg-[var(--surface)] p-4"
+                        className="rounded-[1.45rem] border border-[var(--border)] bg-[var(--surface)] p-3.5"
                         key={order.id}
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <h3 className="text-lg font-semibold text-[var(--primary)]">
+                            <h3 className="text-[16px] font-semibold text-[var(--primary)]">
                               {order.shopName}
                             </h3>
-                            <p className="mt-1 text-sm text-[rgba(26,33,19,0.64)]">
+                            <p className="mt-1 text-[13px] text-[rgba(26,33,19,0.64)]">
                               {formatKg(order.quantityKg)} @ {formatCurrency(order.ratePerKg)}
                             </p>
                           </div>
-                          <strong className="text-xl text-[var(--primary)]">
+                          <strong className="text-[18px] text-[var(--primary)]">
                             {formatCurrency(order.totalAmount)}
                           </strong>
                         </div>
@@ -750,20 +754,20 @@ export default function PoultryDashboard() {
                         ) : (
                           <>
                             {order.notes ? (
-                              <p className="mt-4 rounded-2xl bg-[rgba(24,61,29,0.05)] px-4 py-3 text-sm text-[rgba(26,33,19,0.72)]">
+                              <p className="mt-4 rounded-[1rem] bg-[rgba(24,61,29,0.05)] px-3.5 py-3 text-[13px] text-[rgba(26,33,19,0.72)]">
                                 {order.notes}
                               </p>
                             ) : null}
                             <div className="mt-4 grid grid-cols-2 gap-2">
                               <button
-                                className="min-h-12 rounded-2xl bg-[var(--primary)] px-4 text-sm font-semibold text-white"
+                                className="min-h-10 rounded-[1rem] bg-[var(--primary)] px-4 text-[13px] font-semibold text-white"
                                 onClick={() => beginEdit(order)}
                                 type="button"
                               >
                                 Edit
                               </button>
                               <button
-                                className="min-h-12 rounded-2xl border border-[rgba(187,79,67,0.22)] bg-[rgba(187,79,67,0.06)] px-4 text-sm font-semibold text-[var(--danger)]"
+                                className="min-h-10 rounded-[1rem] border border-[rgba(187,79,67,0.22)] bg-[rgba(187,79,67,0.06)] px-4 text-[13px] font-semibold text-[var(--danger)]"
                                 onClick={() => archiveOrder(order.id)}
                                 type="button"
                               >
@@ -831,19 +835,19 @@ export default function PoultryDashboard() {
                 <div className="space-y-4">
                   {groupedHistory.map((group) => (
                     <section
-                      className="rounded-[1.8rem] border border-[var(--border)] bg-[var(--surface)] p-4"
+                      className="rounded-[1.45rem] border border-[var(--border)] bg-[var(--surface)] p-3.5"
                       key={group.date}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <h3 className="display-heading text-2xl text-[var(--primary)]">
+                          <h3 className="display-heading text-[1.7rem] text-[var(--primary)]">
                             {formatDateLong(group.date)}
                           </h3>
-                          <p className="mt-1 text-sm text-[rgba(26,33,19,0.66)]">
+                          <p className="mt-1 text-[13px] text-[rgba(26,33,19,0.66)]">
                             {group.orders.length} orders · {formatKg(group.totalKg)}
                           </p>
                         </div>
-                        <strong className="text-xl text-[var(--primary)]">
+                        <strong className="text-[18px] text-[var(--primary)]">
                           {formatCurrency(group.totalRevenue)}
                         </strong>
                       </div>
@@ -851,14 +855,14 @@ export default function PoultryDashboard() {
                       <div className="mt-4 space-y-3">
                         {group.orders.map((order) => (
                           <div
-                            className="flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3"
+                            className="flex items-center justify-between gap-3 rounded-[1rem] bg-white px-3.5 py-2.5"
                             key={order.id}
                           >
                             <div>
                               <p className="font-semibold text-[var(--primary)]">
                                 {order.shopName}
                               </p>
-                              <p className="mt-1 text-sm text-[rgba(26,33,19,0.64)]">
+                              <p className="mt-1 text-[13px] text-[rgba(26,33,19,0.64)]">
                                 {formatKg(order.quantityKg)} @ {formatCurrency(order.ratePerKg)}
                               </p>
                             </div>
@@ -883,14 +887,15 @@ export default function PoultryDashboard() {
           {activeTab === "shops" ? (
             <div className="space-y-5">
               <form
-                className="rounded-[1.8rem] border border-[var(--border)] bg-[var(--surface)] p-4"
+                className="rounded-[1.45rem] border border-[var(--border)] bg-[var(--surface)] p-3.5"
                 onSubmit={submitShop}
               >
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[rgba(26,33,19,0.52)]">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[rgba(26,33,19,0.52)]">
                   Add new shop
                 </p>
                 <div className="mt-4 space-y-3">
                   <input
+                    className="min-h-11 rounded-[1rem] px-3.5 text-[14px]"
                     onChange={(event) =>
                       setShopDraft((current) => ({
                         ...current,
@@ -901,6 +906,7 @@ export default function PoultryDashboard() {
                     value={shopDraft.name}
                   />
                   <input
+                    className="min-h-11 rounded-[1rem] px-3.5 text-[14px]"
                     inputMode="tel"
                     onChange={(event) =>
                       setShopDraft((current) => ({
@@ -913,7 +919,7 @@ export default function PoultryDashboard() {
                   />
                 </div>
                 <button
-                  className="mt-4 min-h-12 rounded-2xl bg-[var(--primary)] px-5 text-sm font-semibold text-white disabled:opacity-60"
+                  className="mt-4 min-h-10 rounded-[1rem] bg-[var(--primary)] px-5 text-[13px] font-semibold text-white disabled:opacity-60"
                   disabled={isBusy}
                   type="submit"
                 >
@@ -942,24 +948,6 @@ export default function PoultryDashboard() {
           ) : null}
         </section>
 
-        <div className="pointer-events-none fixed inset-x-0 bottom-3 z-40 mx-auto flex max-w-md px-10 sm:px-12">
-          <div className="pointer-events-auto grid w-full grid-cols-4 gap-1 rounded-[1.45rem] bg-[rgba(24,28,18,0.88)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.2)] backdrop-blur">
-            {tabs.map((tab) => (
-              <button
-                className={`rounded-[1rem] px-1.5 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] leading-tight ${
-                  activeTab === tab.id
-                    ? "bg-white text-[var(--primary)]"
-                    : "text-white/72"
-                }`}
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                type="button"
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </main>
   );
@@ -967,20 +955,20 @@ export default function PoultryDashboard() {
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <article className="rounded-[1.55rem] border border-[var(--border)] bg-[var(--surface)] p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[rgba(26,33,19,0.48)]">
+    <article className="rounded-[1.2rem] border border-[var(--border)] bg-[var(--surface)] p-3">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[rgba(26,33,19,0.48)]">
         {label}
       </p>
-      <strong className="mt-2 block text-2xl text-[var(--primary)]">{value}</strong>
+      <strong className="mt-1.5 block text-[1.25rem] text-[var(--primary)]">{value}</strong>
     </article>
   );
 }
 
 function EmptyState({ body, title }: { body: string; title: string }) {
   return (
-    <section className="rounded-[1.8rem] border border-dashed border-[var(--border-strong)] bg-[rgba(255,252,246,0.5)] px-5 py-10 text-center">
-      <h2 className="display-heading text-3xl text-[var(--primary)]">{title}</h2>
-      <p className="mx-auto mt-3 max-w-xs text-sm leading-6 text-[rgba(26,33,19,0.66)]">
+    <section className="rounded-[1.45rem] border border-dashed border-[var(--border-strong)] bg-[rgba(255,252,246,0.5)] px-4 py-8 text-center">
+      <h2 className="display-heading text-[2rem] text-[var(--primary)]">{title}</h2>
+      <p className="mx-auto mt-3 max-w-xs text-[13px] leading-6 text-[rgba(26,33,19,0.66)]">
         {body}
       </p>
     </section>
@@ -1004,21 +992,21 @@ function ShopCard({
     .join("");
 
   return (
-    <article className="flex items-center gap-3 rounded-[1.8rem] border border-[var(--border)] bg-[var(--surface)] p-4">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--primary-tint)] text-lg font-semibold text-[var(--primary)]">
+    <article className="flex items-center gap-3 rounded-[1.45rem] border border-[var(--border)] bg-[var(--surface)] p-3.5">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--primary-tint)] text-[15px] font-semibold text-[var(--primary)]">
         {initials || "S"}
       </div>
       <div className="min-w-0 flex-1">
-        <h3 className="truncate text-lg font-semibold text-[var(--primary)]">
+        <h3 className="truncate text-[16px] font-semibold text-[var(--primary)]">
           {shop.name}
         </h3>
-        <p className="mt-1 text-sm text-[rgba(26,33,19,0.66)]">
+        <p className="mt-1 text-[13px] text-[rgba(26,33,19,0.66)]">
           {shop.phone || "No phone"} · {shop.totalOrders} orders ·{" "}
           {formatKg(shop.totalKg)}
         </p>
       </div>
       <button
-        className="rounded-2xl border border-[rgba(187,79,67,0.22)] bg-[rgba(187,79,67,0.06)] px-4 py-3 text-sm font-semibold text-[var(--danger)] disabled:opacity-60"
+        className="rounded-[1rem] border border-[rgba(187,79,67,0.22)] bg-[rgba(187,79,67,0.06)] px-3.5 py-2.5 text-[13px] font-semibold text-[var(--danger)] disabled:opacity-60"
         disabled={isBusy}
         onClick={onArchive}
         type="button"
