@@ -68,11 +68,13 @@ select,
 textarea {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 14px;
   background: var(--surface-strong);
   color: var(--foreground);
-  min-height: 52px;
-  padding: 14px 16px;
+  min-height: 44px;
+  padding: 11px 14px;
+  font-size: 14px;
+  line-height: 1.35;
 }
 
 input:focus,
@@ -84,7 +86,7 @@ textarea:focus {
 }
 
 textarea {
-  min-height: 88px;
+  min-height: 74px;
   resize: vertical;
 }
 
@@ -94,7 +96,8 @@ textarea {
 
 .display-heading {
   font-family: var(--font-display), Georgia, serif;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  line-height: 0.94;
 }
 
 .sr-only {

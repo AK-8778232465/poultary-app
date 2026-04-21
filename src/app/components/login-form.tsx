@@ -32,28 +32,28 @@ export default function LoginForm() {
   };
 
   return (
-    <main className="min-h-screen px-3 py-5">
-      <section className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-sm flex-col justify-center">
-        <div className="rounded-[1.8rem] border border-white/50 bg-[rgba(255,252,246,0.86)] p-5 shadow-[0_24px_60px_rgba(33,37,23,0.14)] backdrop-blur">
-          <span className="inline-flex rounded-full bg-[rgba(24,61,29,0.1)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--primary)]">
+    <main className="min-h-screen px-3 py-4">
+      <section className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-[23rem] flex-col justify-center">
+        <div className="rounded-[1.35rem] border border-white/50 bg-[rgba(255,252,246,0.86)] p-4 shadow-[0_18px_42px_rgba(33,37,23,0.12)] backdrop-blur">
+          <span className="inline-flex rounded-full bg-[rgba(24,61,29,0.1)] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--primary)]">
             Private App
           </span>
-          <h1 className="display-heading mt-4 text-[2.6rem] leading-none text-[var(--primary)]">
+          <h1 className="display-heading mt-3 text-[2rem] text-[var(--primary)]">
             Gaikwad Poultry
           </h1>
-          <p className="mt-3 text-[15px] leading-7 text-[rgba(26,33,19,0.72)]">
+          <p className="mt-2.5 text-[13px] leading-6 text-[rgba(26,33,19,0.72)]">
             Secure mobile dashboard for rate updates, daily orders, shop records,
             and history.
           </p>
 
-          <form className="mt-7 space-y-4" onSubmit={handleSubmit}>
+          <form className="mt-6 space-y-3.5" onSubmit={handleSubmit}>
             <label className="block">
-              <span className="mb-2 block text-[15px] font-medium text-[rgba(26,33,19,0.76)]">
+              <span className="mb-1.5 block text-[13px] font-medium text-[rgba(26,33,19,0.76)]">
                 Enter PIN
               </span>
               <input
                 autoComplete="current-password"
-                className="min-h-12 rounded-[1.2rem] px-4 text-[15px]"
+                className="min-h-10 rounded-[0.95rem] px-3 text-[13px]"
                 inputMode="numeric"
                 maxLength={8}
                 name="pin"
@@ -65,13 +65,13 @@ export default function LoginForm() {
             </label>
 
             {error ? (
-              <p className="rounded-[1.2rem] border border-[rgba(187,79,67,0.22)] bg-[rgba(187,79,67,0.09)] px-4 py-3 text-[14px] text-[var(--danger)]">
+              <p className="rounded-[0.95rem] border border-[rgba(187,79,67,0.22)] bg-[rgba(187,79,67,0.09)] px-3 py-2.5 text-[12px] text-[var(--danger)]">
                 {error}
               </p>
             ) : null}
 
             <button
-              className="flex min-h-12 w-full items-center justify-center rounded-[1.2rem] bg-[var(--primary)] px-5 text-[15px] font-semibold text-white transition hover:bg-[var(--primary-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex min-h-10 w-full items-center justify-center rounded-[0.95rem] bg-[var(--primary)] px-4 text-[13px] font-semibold text-white transition hover:bg-[var(--primary-soft)] disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isPending}
               type="submit"
             >
