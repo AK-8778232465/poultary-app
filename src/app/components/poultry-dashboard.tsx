@@ -1,0 +1,1030 @@
+"use client";
+
+import {
+  FormEvent,
+  startTransition,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  computeDashboardMetrics,
+  computeFrequentShops,
+  formatChartDate,
+  formatHistoryGroups,
+  getCurrentRateLabel,
+} from "@/lib/dashboard";
+import { formatCurrency, formatDateLong, formatKg } from "@/lib/format";
+import type {
+  BootstrapPayload,
+  DashboardTab,
+  HistoryFilter,
+  HistoryOrder,
+  RatePayload,
+  ShopSummary,
+} from "@/lib/types";
+
+const tabs: Array<{ id: DashboardTab; label: string }> = [
+  { id: "new-order", label: "New Order" },
+  { id: "today", label: "Today" },
+  { id: "history", label: "History" },
+  { id: "shops", label: "Shops" },
+];
+
+const historyFilters: Array<{ id: HistoryFilter; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "week", label: "This week" },
+  { id: "month", label: "This month" },
+  { id: "shop", label: "By shop" },
+];
+
+const emptyRate: RatePayload = {
+  value: "",
+};
+
+const emptyShopDraft = {
+  name: "",
+  phone: "",
+};
+
+const emptyOrderDraft = {
+  shopId: "",
+  quantityKg: "",
+  notes: "",
+};
+const emptyShops: ShopSummary[] = [];
+const emptyOrders: HistoryOrder[] = [];
+
+type Banner = {
+  tone: "success" | "error";
+  text: string;
+};
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
+async function readJson<T>(response: Response): Promise<T> {
+  const payload = (await response.json()) as T & { error?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Something went wrong.");
+  }
+
+  return payload;
+}
+
+export default function PoultryDashboard() {
+  const [activeTab, setActiveTab] = useState<DashboardTab>("new-order");
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
+  const [isBusy, setIsBusy] = useState(false);
+  const [banner, setBanner] = useState<Banner | null>(null);
+  const [payload, setPayload] = useState<BootstrapPayload | null>(null);
+  const [orderDraft, setOrderDraft] = useState(emptyOrderDraft);
+  const [shopDraft, setShopDraft] = useState(emptyShopDraft);
+  const [rateDraft, setRateDraft] = useState<RatePayload>(emptyRate);
+  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
+  const [historyShopFilter, setHistoryShopFilter] = useState("");
+  const deferredHistoryShopFilter = useDeferredValue(historyShopFilter);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [editingOrderDraft, setEditingOrderDraft] = useState({
+    quantityKg: "",
+    ratePerKg: "",
+    notes: "",
+    shopId: "",
+  });
+
+  const refreshData = useCallback(async (message?: Banner) => {
+    const response = await fetch("/api/bootstrap", {
+      cache: "no-store",
+    });
+    const nextPayload = await readJson<BootstrapPayload>(response);
+
+    setPayload(nextPayload);
+    setRateDraft({
+      value: nextPayload.currentRate ? String(nextPayload.currentRate.ratePerKg) : "",
+    });
+
+    setOrderDraft((current) => ({
+      ...current,
+      shopId:
+        current.shopId ||
+        (nextPayload.shops.length ? nextPayload.shops[0]?.id || "" : ""),
+    }));
+
+    if (message) {
+      setBanner(message);
+    }
+  }, []);
+
+  useEffect(() => {
+    const bootstrap = async () => {
+      try {
+        await refreshData();
+      } catch (error) {
+        setBanner({
+          tone: "error",
+          text: getErrorMessage(
+            error,
+            "Unable to load live data. Please verify your server setup.",
+          ),
+        });
+      } finally {
+        setIsBootstrapping(false);
+      }
+    };
+
+    bootstrap();
+  }, [refreshData]);
+
+  const shops = payload?.shops ?? emptyShops;
+  const orders = payload?.orders ?? emptyOrders;
+  const todayLabel = payload ? formatDateLong(payload.todayDate) : "";
+  const currentRateLabel = getCurrentRateLabel(payload?.currentRate?.ratePerKg ?? null);
+  const selectedShop = shops.find((shop) => shop.id === orderDraft.shopId) ?? null;
+  const liveTotal =
+    Number(orderDraft.quantityKg || 0) * Number(payload?.currentRate?.ratePerKg || 0);
+  const frequentShops = useMemo(() => computeFrequentShops(shops, orders), [shops, orders]);
+  const metrics = useMemo(() => {
+    return computeDashboardMetrics(orders, historyFilter, deferredHistoryShopFilter);
+  }, [orders, historyFilter, deferredHistoryShopFilter]);
+  const groupedHistory = useMemo(() => {
+    return formatHistoryGroups(metrics.filteredOrders);
+  }, [metrics.filteredOrders]);
+  const todayOrders = useMemo(() => {
+    if (!payload) {
+      return [];
+    }
+
+    return orders.filter((order) => order.orderDate === payload.todayDate);
+  }, [orders, payload]);
+
+  const clearBanner = () => {
+    setBanner(null);
+  };
+
+  const handleTabChange = (tab: DashboardTab) => {
+    startTransition(() => {
+      setActiveTab(tab);
+    });
+  };
+
+  const handleLogout = async () => {
+    setIsBusy(true);
+
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      window.location.href = "/login";
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsBusy(true);
+    clearBanner();
+
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          shopId: orderDraft.shopId,
+          quantityKg: Number(orderDraft.quantityKg),
+          notes: orderDraft.notes,
+        }),
+      });
+
+      await readJson(response);
+      await refreshData({
+        tone: "success",
+        text: "Order saved successfully.",
+      });
+
+      setOrderDraft({
+        shopId: orderDraft.shopId,
+        quantityKg: "",
+        notes: "",
+      });
+
+      setActiveTab("today");
+    } catch (error) {
+      setBanner({
+        tone: "error",
+        text: getErrorMessage(error, "Unable to save the order."),
+      });
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const submitShop = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsBusy(true);
+    clearBanner();
+
+    try {
+      const response = await fetch("/api/shops", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(shopDraft),
+      });
+
+      await readJson(response);
+      await refreshData({
+        tone: "success",
+        text: "Shop added successfully.",
+      });
+      setShopDraft(emptyShopDraft);
+    } catch (error) {
+      setBanner({
+        tone: "error",
+        text: getErrorMessage(error, "Unable to add the shop."),
+      });
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const submitRate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsBusy(true);
+    clearBanner();
+
+    try {
+      const response = await fetch("/api/rates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ratePerKg: Number(rateDraft.value),
+        }),
+      });
+
+      await readJson(response);
+      await refreshData({
+        tone: "success",
+        text: "Rate updated for new orders.",
+      });
+    } catch (error) {
+      setBanner({
+        tone: "error",
+        text: getErrorMessage(error, "Unable to update the rate."),
+      });
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const beginEdit = (order: HistoryOrder) => {
+    setEditingOrderId(order.id);
+    setEditingOrderDraft({
+      quantityKg: String(order.quantityKg),
+      ratePerKg: String(order.ratePerKg),
+      notes: order.notes ?? "",
+      shopId: order.shopId,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingOrderId(null);
+    setEditingOrderDraft({
+      quantityKg: "",
+      ratePerKg: "",
+      notes: "",
+      shopId: "",
+    });
+  };
+
+  const saveEdit = async (orderId: string) => {
+    setIsBusy(true);
+    clearBanner();
+
+    try {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...editingOrderDraft,
+          quantityKg: Number(editingOrderDraft.quantityKg),
+          ratePerKg: Number(editingOrderDraft.ratePerKg),
+        }),
+      });
+
+      await readJson(response);
+      await refreshData({
+        tone: "success",
+        text: "Order updated successfully.",
+      });
+      cancelEdit();
+    } catch (error) {
+      setBanner({
+        tone: "error",
+        text: getErrorMessage(error, "Unable to update the order."),
+      });
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const archiveOrder = async (orderId: string) => {
+    const confirmed = window.confirm("Archive this order?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsBusy(true);
+    clearBanner();
+
+    try {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: "DELETE",
+      });
+
+      await readJson(response);
+      await refreshData({
+        tone: "success",
+        text: "Order archived safely.",
+      });
+    } catch (error) {
+      setBanner({
+        tone: "error",
+        text: getErrorMessage(error, "Unable to archive the order."),
+      });
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const archiveShop = async (shopId: string) => {
+    const confirmed = window.confirm("Archive this shop?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsBusy(true);
+    clearBanner();
+
+    try {
+      const response = await fetch(`/api/shops/${shopId}`, {
+        method: "PATCH",
+      });
+
+      await readJson(response);
+      await refreshData({
+        tone: "success",
+        text: "Shop archived successfully.",
+      });
+    } catch (error) {
+      setBanner({
+        tone: "error",
+        text: getErrorMessage(error, "Unable to archive the shop."),
+      });
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  if (isBootstrapping) {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-md items-center px-4 py-8">
+        <div className="w-full rounded-[2rem] bg-[rgba(255,252,246,0.88)] p-6 shadow-[0_24px_60px_rgba(33,37,23,0.16)]">
+          <p className="text-sm uppercase tracking-[0.22em] text-[rgba(26,33,19,0.56)]">
+            Loading dashboard
+          </p>
+          <h1 className="display-heading mt-3 text-4xl text-[var(--primary)]">
+            Gaikwad Poultry
+          </h1>
+          <div className="mt-6 space-y-3">
+            <div className="h-5 animate-pulse rounded-full bg-[rgba(24,61,29,0.08)]" />
+            <div className="h-20 animate-pulse rounded-[1.75rem] bg-[rgba(24,61,29,0.08)]" />
+            <div className="h-52 animate-pulse rounded-[1.75rem] bg-[rgba(24,61,29,0.08)]" />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="mx-auto min-h-screen max-w-md px-3 py-3 sm:px-4 sm:py-5">
+      <div className="rounded-[2rem] border border-white/55 bg-[rgba(255,252,246,0.84)] shadow-[var(--shadow)] backdrop-blur">
+        <header className="rounded-t-[2rem] bg-[linear-gradient(180deg,#16381a_0%,#204925_100%)] px-5 pb-5 pt-5 text-white">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white/70">
+                Poultry orders
+              </p>
+              <h1 className="display-heading mt-2 text-4xl leading-none">
+                Gaikwad Poultry
+              </h1>
+              <p className="mt-2 text-sm text-white/74">{todayLabel}</p>
+            </div>
+
+            <button
+              className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/84"
+              disabled={isBusy}
+              onClick={handleLogout}
+              type="button"
+            >
+              Logout
+            </button>
+          </div>
+
+          <section className="mt-5 rounded-[1.75rem] bg-[rgba(255,255,255,0.1)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm text-white/72">Today&apos;s rate</p>
+                <strong className="mt-2 block text-4xl font-medium text-white">
+                  {currentRateLabel}
+                </strong>
+                <p className="mt-2 text-xs uppercase tracking-[0.16em] text-white/58">
+                  {payload?.currentRate
+                    ? `Updated ${formatChartDate(payload.currentRate.effectiveDate)}`
+                    : "Add a rate to start taking orders"}
+                </p>
+              </div>
+            </div>
+
+            <form className="mt-4 flex gap-2" onSubmit={submitRate}>
+              <label className="flex-1">
+                <span className="sr-only">Rate per kg</span>
+                <input
+                  inputMode="decimal"
+                  onChange={(event) =>
+                    setRateDraft({
+                      value: event.target.value,
+                    })
+                  }
+                  placeholder="Enter rate"
+                  value={rateDraft.value}
+                />
+              </label>
+              <button
+                className="min-h-[52px] rounded-2xl bg-white px-4 text-sm font-semibold text-[var(--primary)] disabled:opacity-60"
+                disabled={isBusy}
+                type="submit"
+              >
+                Edit Rate
+              </button>
+            </form>
+          </section>
+        </header>
+
+        <nav className="grid grid-cols-4 gap-1 border-b border-[var(--border)] bg-[rgba(255,254,249,0.92)] px-2 py-2">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+
+            return (
+              <button
+                className={`rounded-2xl px-2 py-3 text-center text-sm font-medium transition ${
+                  isActive
+                    ? "bg-[rgba(24,61,29,0.1)] text-[var(--primary)]"
+                    : "text-[rgba(26,33,19,0.66)]"
+                }`}
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                type="button"
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        {banner ? (
+          <div
+            className={`mx-4 mt-4 rounded-2xl border px-4 py-3 text-sm ${
+              banner.tone === "success"
+                ? "border-[rgba(34,108,71,0.16)] bg-[rgba(34,108,71,0.09)] text-[var(--success)]"
+                : "border-[rgba(187,79,67,0.16)] bg-[rgba(187,79,67,0.08)] text-[var(--danger)]"
+            }`}
+          >
+            {banner.text}
+          </div>
+        ) : null}
+
+        <section className="px-4 pb-28 pt-4">
+          {activeTab === "new-order" ? (
+            <div className="space-y-5">
+              <section className="rounded-[1.8rem] border border-[var(--border)] bg-[var(--surface)] p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[rgba(26,33,19,0.52)]">
+                  Quick picks
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {frequentShops.length ? (
+                    frequentShops.map((shop) => (
+                      <button
+                        className={`rounded-full border px-4 py-2 text-sm font-medium ${
+                          orderDraft.shopId === shop.id
+                            ? "border-[var(--primary)] bg-[var(--primary)] text-white"
+                            : "border-[rgba(24,61,29,0.12)] bg-white text-[var(--primary)]"
+                        }`}
+                        key={shop.id}
+                        onClick={() =>
+                          setOrderDraft((current) => ({
+                            ...current,
+                            shopId: shop.id,
+                          }))
+                        }
+                        type="button"
+                      >
+                        {shop.name}
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-sm text-[rgba(26,33,19,0.64)]">
+                      Add shops first to unlock quick ordering.
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              <form className="space-y-4" onSubmit={submitOrder}>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-[rgba(26,33,19,0.72)]">
+                    Select shop
+                  </span>
+                  <select
+                    onChange={(event) =>
+                      setOrderDraft((current) => ({
+                        ...current,
+                        shopId: event.target.value,
+                      }))
+                    }
+                    value={orderDraft.shopId}
+                  >
+                    {shops.map((shop) => (
+                      <option key={shop.id} value={shop.id}>
+                        {shop.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-[rgba(26,33,19,0.72)]">
+                    Quantity (kg)
+                  </span>
+                  <input
+                    inputMode="decimal"
+                    onChange={(event) =>
+                      setOrderDraft((current) => ({
+                        ...current,
+                        quantityKg: event.target.value,
+                      }))
+                    }
+                    placeholder="Enter kg"
+                    value={orderDraft.quantityKg}
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-[rgba(26,33,19,0.72)]">
+                    Notes (optional)
+                  </span>
+                  <textarea
+                    onChange={(event) =>
+                      setOrderDraft((current) => ({
+                        ...current,
+                        notes: event.target.value,
+                      }))
+                    }
+                    placeholder="Special delivery note, packaging note, or reminder"
+                    value={orderDraft.notes}
+                  />
+                </label>
+
+                <section className="rounded-[1.75rem] bg-[linear-gradient(135deg,rgba(223,233,201,0.84),rgba(255,247,223,0.96))] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[rgba(26,33,19,0.48)]">
+                    Order total
+                  </p>
+                  <div className="mt-3 flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-sm text-[rgba(26,33,19,0.68)]">
+                        {selectedShop ? selectedShop.name : "Select a shop"}
+                      </p>
+                      <strong className="mt-1 block text-4xl text-[var(--primary)]">
+                        {formatCurrency(liveTotal)}
+                      </strong>
+                    </div>
+                    <div className="text-right text-sm text-[rgba(26,33,19,0.62)]">
+                      <p>{currentRateLabel}</p>
+                      <p>{formatKg(orderDraft.quantityKg || 0)}</p>
+                    </div>
+                  </div>
+                </section>
+
+                <button
+                  className="min-h-14 w-full rounded-2xl bg-[var(--primary)] px-5 text-base font-semibold text-white disabled:opacity-60"
+                  disabled={isBusy || !shops.length}
+                  type="submit"
+                >
+                  Save Order
+                </button>
+              </form>
+            </div>
+          ) : null}
+
+          {activeTab === "today" ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <MetricCard label="Orders" value={String(todayOrders.length)} />
+                <MetricCard
+                  label="Total kg"
+                  value={formatKg(
+                    todayOrders.reduce((sum, order) => sum + order.quantityKg, 0),
+                  )}
+                />
+                <MetricCard
+                  label="Revenue"
+                  value={formatCurrency(
+                    todayOrders.reduce((sum, order) => sum + order.totalAmount, 0),
+                  )}
+                />
+              </div>
+
+              {todayOrders.length ? (
+                <div className="space-y-3">
+                  {todayOrders.map((order) => {
+                    const isEditing = editingOrderId === order.id;
+
+                    return (
+                      <article
+                        className="rounded-[1.8rem] border border-[var(--border)] bg-[var(--surface)] p-4"
+                        key={order.id}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-[var(--primary)]">
+                              {order.shopName}
+                            </h3>
+                            <p className="mt-1 text-sm text-[rgba(26,33,19,0.64)]">
+                              {formatKg(order.quantityKg)} @ {formatCurrency(order.ratePerKg)}
+                            </p>
+                          </div>
+                          <strong className="text-xl text-[var(--primary)]">
+                            {formatCurrency(order.totalAmount)}
+                          </strong>
+                        </div>
+
+                        {isEditing ? (
+                          <div className="mt-4 space-y-3">
+                            <select
+                              onChange={(event) =>
+                                setEditingOrderDraft((current) => ({
+                                  ...current,
+                                  shopId: event.target.value,
+                                }))
+                              }
+                              value={editingOrderDraft.shopId}
+                            >
+                              {shops.map((shop) => (
+                                <option key={shop.id} value={shop.id}>
+                                  {shop.name}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              inputMode="decimal"
+                              onChange={(event) =>
+                                setEditingOrderDraft((current) => ({
+                                  ...current,
+                                  quantityKg: event.target.value,
+                                }))
+                              }
+                              value={editingOrderDraft.quantityKg}
+                            />
+                            <input
+                              inputMode="decimal"
+                              onChange={(event) =>
+                                setEditingOrderDraft((current) => ({
+                                  ...current,
+                                  ratePerKg: event.target.value,
+                                }))
+                              }
+                              value={editingOrderDraft.ratePerKg}
+                            />
+                            <textarea
+                              onChange={(event) =>
+                                setEditingOrderDraft((current) => ({
+                                  ...current,
+                                  notes: event.target.value,
+                                }))
+                              }
+                              value={editingOrderDraft.notes}
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                className="min-h-12 rounded-2xl bg-[var(--primary)] px-4 text-sm font-semibold text-white"
+                                disabled={isBusy}
+                                onClick={() => saveEdit(order.id)}
+                                type="button"
+                              >
+                                Save
+                              </button>
+                              <button
+                                className="min-h-12 rounded-2xl border border-[var(--border)] bg-white px-4 text-sm font-semibold text-[var(--primary)]"
+                                onClick={cancelEdit}
+                                type="button"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {order.notes ? (
+                              <p className="mt-4 rounded-2xl bg-[rgba(24,61,29,0.05)] px-4 py-3 text-sm text-[rgba(26,33,19,0.72)]">
+                                {order.notes}
+                              </p>
+                            ) : null}
+                            <div className="mt-4 grid grid-cols-2 gap-2">
+                              <button
+                                className="min-h-12 rounded-2xl bg-[var(--primary)] px-4 text-sm font-semibold text-white"
+                                onClick={() => beginEdit(order)}
+                                type="button"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="min-h-12 rounded-2xl border border-[rgba(187,79,67,0.22)] bg-[rgba(187,79,67,0.06)] px-4 text-sm font-semibold text-[var(--danger)]"
+                                onClick={() => archiveOrder(order.id)}
+                                type="button"
+                              >
+                                Archive
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <EmptyState
+                  body="No orders yet for today. Add the first order from the New Order tab."
+                  title="Today is clear"
+                />
+              )}
+            </div>
+          ) : null}
+
+          {activeTab === "history" ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <MetricCard label="Days" value={String(metrics.dayCount)} />
+                <MetricCard label="Total kg" value={formatKg(metrics.totalKg)} />
+                <MetricCard
+                  label="Revenue"
+                  value={formatCurrency(metrics.totalRevenue)}
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {historyFilters.map((filter) => (
+                  <button
+                    className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                      historyFilter === filter.id
+                        ? "bg-[var(--primary)] text-white"
+                        : "bg-white text-[var(--primary)]"
+                    }`}
+                    key={filter.id}
+                    onClick={() => setHistoryFilter(filter.id)}
+                    type="button"
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+
+              {historyFilter === "shop" ? (
+                <select
+                  onChange={(event) => setHistoryShopFilter(event.target.value)}
+                  value={historyShopFilter}
+                >
+                  <option value="">All shops</option>
+                  {shops.map((shop) => (
+                    <option key={shop.id} value={shop.id}>
+                      {shop.name}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+
+              {groupedHistory.length ? (
+                <div className="space-y-4">
+                  {groupedHistory.map((group) => (
+                    <section
+                      className="rounded-[1.8rem] border border-[var(--border)] bg-[var(--surface)] p-4"
+                      key={group.date}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="display-heading text-2xl text-[var(--primary)]">
+                            {formatDateLong(group.date)}
+                          </h3>
+                          <p className="mt-1 text-sm text-[rgba(26,33,19,0.66)]">
+                            {group.orders.length} orders · {formatKg(group.totalKg)}
+                          </p>
+                        </div>
+                        <strong className="text-xl text-[var(--primary)]">
+                          {formatCurrency(group.totalRevenue)}
+                        </strong>
+                      </div>
+
+                      <div className="mt-4 space-y-3">
+                        {group.orders.map((order) => (
+                          <div
+                            className="flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3"
+                            key={order.id}
+                          >
+                            <div>
+                              <p className="font-semibold text-[var(--primary)]">
+                                {order.shopName}
+                              </p>
+                              <p className="mt-1 text-sm text-[rgba(26,33,19,0.64)]">
+                                {formatKg(order.quantityKg)} @ {formatCurrency(order.ratePerKg)}
+                              </p>
+                            </div>
+                            <strong className="text-[var(--primary)]">
+                              {formatCurrency(order.totalAmount)}
+                            </strong>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  body="No historical orders match this filter yet."
+                  title="History will appear here"
+                />
+              )}
+            </div>
+          ) : null}
+
+          {activeTab === "shops" ? (
+            <div className="space-y-5">
+              <form
+                className="rounded-[1.8rem] border border-[var(--border)] bg-[var(--surface)] p-4"
+                onSubmit={submitShop}
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[rgba(26,33,19,0.52)]">
+                  Add new shop
+                </p>
+                <div className="mt-4 space-y-3">
+                  <input
+                    onChange={(event) =>
+                      setShopDraft((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    placeholder="Enter shop name"
+                    value={shopDraft.name}
+                  />
+                  <input
+                    inputMode="tel"
+                    onChange={(event) =>
+                      setShopDraft((current) => ({
+                        ...current,
+                        phone: event.target.value,
+                      }))
+                    }
+                    placeholder="Phone number (optional)"
+                    value={shopDraft.phone}
+                  />
+                </div>
+                <button
+                  className="mt-4 min-h-12 rounded-2xl bg-[var(--primary)] px-5 text-sm font-semibold text-white disabled:opacity-60"
+                  disabled={isBusy}
+                  type="submit"
+                >
+                  Add Shop
+                </button>
+              </form>
+
+              <div className="space-y-3">
+                {shops.length ? (
+                  shops.map((shop) => (
+                    <ShopCard
+                      isBusy={isBusy}
+                      key={shop.id}
+                      onArchive={() => archiveShop(shop.id)}
+                      shop={shop}
+                    />
+                  ))
+                ) : (
+                  <EmptyState
+                    body="Add the shops you supply to begin taking daily orders."
+                    title="No shops added yet"
+                  />
+                )}
+              </div>
+            </div>
+          ) : null}
+        </section>
+
+        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 mx-auto flex max-w-md px-6">
+          <div className="pointer-events-auto grid w-full grid-cols-4 gap-2 rounded-[1.75rem] bg-[rgba(24,28,18,0.88)] p-2 shadow-[0_22px_50px_rgba(0,0,0,0.22)] backdrop-blur">
+            {tabs.map((tab) => (
+              <button
+                className={`rounded-[1.2rem] px-2 py-3 text-xs font-semibold uppercase tracking-[0.12em] ${
+                  activeTab === tab.id
+                    ? "bg-white text-[var(--primary)]"
+                    : "text-white/72"
+                }`}
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                type="button"
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <article className="rounded-[1.55rem] border border-[var(--border)] bg-[var(--surface)] p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[rgba(26,33,19,0.48)]">
+        {label}
+      </p>
+      <strong className="mt-2 block text-2xl text-[var(--primary)]">{value}</strong>
+    </article>
+  );
+}
+
+function EmptyState({ body, title }: { body: string; title: string }) {
+  return (
+    <section className="rounded-[1.8rem] border border-dashed border-[var(--border-strong)] bg-[rgba(255,252,246,0.5)] px-5 py-10 text-center">
+      <h2 className="display-heading text-3xl text-[var(--primary)]">{title}</h2>
+      <p className="mx-auto mt-3 max-w-xs text-sm leading-6 text-[rgba(26,33,19,0.66)]">
+        {body}
+      </p>
+    </section>
+  );
+}
+
+function ShopCard({
+  isBusy,
+  onArchive,
+  shop,
+}: {
+  isBusy: boolean;
+  onArchive: () => void;
+  shop: ShopSummary;
+}) {
+  const initials = shop.name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+
+  return (
+    <article className="flex items-center gap-3 rounded-[1.8rem] border border-[var(--border)] bg-[var(--surface)] p-4">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--primary-tint)] text-lg font-semibold text-[var(--primary)]">
+        {initials || "S"}
+      </div>
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate text-lg font-semibold text-[var(--primary)]">
+          {shop.name}
+        </h3>
+        <p className="mt-1 text-sm text-[rgba(26,33,19,0.66)]">
+          {shop.phone || "No phone"} · {shop.totalOrders} orders ·{" "}
+          {formatKg(shop.totalKg)}
+        </p>
+      </div>
+      <button
+        className="rounded-2xl border border-[rgba(187,79,67,0.22)] bg-[rgba(187,79,67,0.06)] px-4 py-3 text-sm font-semibold text-[var(--danger)] disabled:opacity-60"
+        disabled={isBusy}
+        onClick={onArchive}
+        type="button"
+      >
+        Archive
+      </button>
+    </article>
+  );
+}
