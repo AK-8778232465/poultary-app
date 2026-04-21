@@ -77,17 +77,6 @@ export default function LoginForm() {
               {isPending ? "Unlocking..." : "Unlock App"}
             </button>
           </form>
-
-          <div className="mt-8 rounded-[1.75rem] bg-[linear-gradient(135deg,rgba(223,233,201,0.92),rgba(255,248,231,0.92))] p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[rgba(26,33,19,0.56)]">
-              Deployment Notes
-            </p>
-            <p className="mt-2 text-sm leading-6 text-[rgba(26,33,19,0.72)]">
-              Set <code>APP_PIN_HASH</code>, <code>APP_SESSION_SECRET</code>,{" "}
-              <code>SUPABASE_URL</code>, and <code>SUPABASE_SERVICE_ROLE_KEY</code>{" "}
-              in Vercel before using production data.
-            </p>
-          </div>
         </div>
       </section>
     </main>

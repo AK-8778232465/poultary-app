@@ -942,11 +942,11 @@ export default function PoultryDashboard() {
           ) : null}
         </section>
 
-        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 mx-auto flex max-w-md px-6">
-          <div className="pointer-events-auto grid w-full grid-cols-4 gap-2 rounded-[1.75rem] bg-[rgba(24,28,18,0.88)] p-2 shadow-[0_22px_50px_rgba(0,0,0,0.22)] backdrop-blur">
+        <div className="pointer-events-none fixed inset-x-0 bottom-3 z-40 mx-auto flex max-w-md px-10 sm:px-12">
+          <div className="pointer-events-auto grid w-full grid-cols-4 gap-1 rounded-[1.45rem] bg-[rgba(24,28,18,0.88)] p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.2)] backdrop-blur">
             {tabs.map((tab) => (
               <button
-                className={`rounded-[1.2rem] px-2 py-3 text-xs font-semibold uppercase tracking-[0.12em] ${
+                className={`rounded-[1rem] px-1.5 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] leading-tight ${
                   activeTab === tab.id
                     ? "bg-white text-[var(--primary)]"
                     : "text-white/72"
