@@ -26,6 +26,8 @@ type OrderRow = {
   quantity_kg: number;
   rate_per_kg: number;
   total_amount: number;
+  payment_amount: number;
+  balance_due: number;
   notes: string | null;
   shops: {
     name: string;
@@ -85,21 +87,47 @@ async function listOrderTotalsByShop() {
   const client = getSupabase();
   const { data, error } = await client
     .from("orders")
-    .select("shop_id, quantity_kg")
+    .select("shop_id, quantity_kg, total_amount, payment_amount, balance_due")
     .is("deleted_at", null)
-    .returns<Array<{ shop_id: string; quantity_kg: number }>>();
+    .returns<
+      Array<{
+        shop_id: string;
+        quantity_kg: number;
+        total_amount: number;
+        payment_amount: number;
+        balance_due: number;
+      }>
+    >();
 
   if (error) {
     throw new Error(error.message);
   }
 
   return (data ?? []).reduce((map, row) => {
-    const current = map.get(row.shop_id) ?? { totalKg: 0, totalOrders: 0 };
+    const current = map.get(row.shop_id) ?? {
+      totalDue: 0,
+      totalKg: 0,
+      totalOrders: 0,
+      totalPaid: 0,
+      totalRevenue: 0,
+    };
+    current.totalDue += Number(row.balance_due);
     current.totalKg += Number(row.quantity_kg);
     current.totalOrders += 1;
+    current.totalPaid += Number(row.payment_amount);
+    current.totalRevenue += Number(row.total_amount);
     map.set(row.shop_id, current);
     return map;
-  }, new Map<string, { totalKg: number; totalOrders: number }>());
+  }, new Map<
+    string,
+    {
+      totalDue: number;
+      totalKg: number;
+      totalOrders: number;
+      totalPaid: number;
+      totalRevenue: number;
+    }
+  >());
 }
 
 async function listShops() {
@@ -118,14 +146,23 @@ async function listShops() {
   const orderTotals = await listOrderTotalsByShop();
 
   return (data ?? []).map<ShopSummary>((shop) => {
-    const totals = orderTotals.get(shop.id) ?? { totalKg: 0, totalOrders: 0 };
+    const totals = orderTotals.get(shop.id) ?? {
+      totalDue: 0,
+      totalKg: 0,
+      totalOrders: 0,
+      totalPaid: 0,
+      totalRevenue: 0,
+    };
 
     return {
       id: shop.id,
       name: shop.name,
       phone: shop.phone,
+      totalDue: totals.totalDue,
       totalKg: totals.totalKg,
       totalOrders: totals.totalOrders,
+      totalPaid: totals.totalPaid,
+      totalRevenue: totals.totalRevenue,
     };
   });
 }
@@ -135,7 +172,7 @@ async function listOrders() {
   const { data, error } = await client
     .from("orders")
     .select(
-      "id, shop_id, order_date, quantity_kg, rate_per_kg, total_amount, notes, shops(name)",
+      "id, shop_id, order_date, quantity_kg, rate_per_kg, total_amount, payment_amount, balance_due, notes, shops(name)",
     )
     .is("deleted_at", null)
     .order("order_date", { ascending: false })
@@ -154,6 +191,8 @@ async function listOrders() {
     quantityKg: Number(order.quantity_kg),
     ratePerKg: Number(order.rate_per_kg),
     totalAmount: Number(order.total_amount),
+    paymentAmount: Number(order.payment_amount),
+    balanceDue: Number(order.balance_due),
     notes: order.notes,
   }));
 }
@@ -194,7 +233,7 @@ async function requireActiveShop(shopId: string) {
 export async function createOrder(payload: {
   shopId: string;
   quantityKg: number;
-  notes?: string;
+  paymentAmount?: number;
 }) {
   await requireActiveShop(payload.shopId);
 
@@ -206,15 +245,21 @@ export async function createOrder(payload: {
 
   const client = getSupabase();
   const totalAmount = Number((payload.quantityKg * currentRate.ratePerKg).toFixed(2));
+  const paymentAmount = Number(
+    Math.min(payload.paymentAmount ?? 0, totalAmount).toFixed(2),
+  );
+  const balanceDue = Number((totalAmount - paymentAmount).toFixed(2));
   const { data, error } = await client
     .from("orders")
     .insert({
+      balance_due: balanceDue,
       shop_id: payload.shopId,
       order_date: todayDate(),
+      payment_amount: paymentAmount,
       quantity_kg: payload.quantityKg,
       rate_per_kg: currentRate.ratePerKg,
       total_amount: totalAmount,
-      notes: payload.notes?.trim() || null,
+      notes: null,
     })
     .select()
     .single();
@@ -232,21 +277,27 @@ export async function updateOrder(
     shopId: string;
     quantityKg: number;
     ratePerKg: number;
-    notes?: string;
+    paymentAmount?: number;
   },
 ) {
   await requireActiveShop(payload.shopId);
 
   const client = getSupabase();
   const totalAmount = Number((payload.quantityKg * payload.ratePerKg).toFixed(2));
+  const paymentAmount = Number(
+    Math.min(payload.paymentAmount ?? 0, totalAmount).toFixed(2),
+  );
+  const balanceDue = Number((totalAmount - paymentAmount).toFixed(2));
   const { data, error } = await client
     .from("orders")
     .update({
+      balance_due: balanceDue,
       shop_id: payload.shopId,
+      payment_amount: paymentAmount,
       quantity_kg: payload.quantityKg,
       rate_per_kg: payload.ratePerKg,
       total_amount: totalAmount,
-      notes: payload.notes?.trim() || null,
+      notes: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", orderId)

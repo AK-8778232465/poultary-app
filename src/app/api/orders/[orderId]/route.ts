@@ -7,7 +7,7 @@ const updateOrderSchema = z.object({
   shopId: z.uuid(),
   quantityKg: z.number().positive(),
   ratePerKg: z.number().positive(),
-  notes: z.string().trim().max(240).optional().default(""),
+  paymentAmount: z.number().min(0).optional().default(0),
 });
 
 export async function PATCH(

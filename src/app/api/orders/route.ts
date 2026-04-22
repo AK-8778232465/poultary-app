@@ -6,7 +6,7 @@ import { createOrder } from "@/lib/supabase";
 const createOrderSchema = z.object({
   shopId: z.uuid(),
   quantityKg: z.number().positive(),
-  notes: z.string().trim().max(240).optional().default(""),
+  paymentAmount: z.number().min(0).optional().default(0),
 });
 
 export async function POST(request: Request) {

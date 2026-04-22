@@ -7,6 +7,9 @@ export type ShopSummary = {
   phone: string | null;
   totalKg: number;
   totalOrders: number;
+  totalRevenue: number;
+  totalPaid: number;
+  totalDue: number;
 };
 
 export type DailyRate = {
@@ -23,6 +26,8 @@ export type HistoryOrder = {
   quantityKg: number;
   ratePerKg: number;
   totalAmount: number;
+  paymentAmount: number;
+  balanceDue: number;
   notes: string | null;
 };
 

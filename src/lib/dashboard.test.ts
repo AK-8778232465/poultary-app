@@ -6,8 +6,26 @@ import {
 import type { HistoryOrder, ShopSummary } from "@/lib/types";
 
 const shops: ShopSummary[] = [
-  { id: "a", name: "Alpha Meats", phone: null, totalKg: 42, totalOrders: 2 },
-  { id: "b", name: "Beta Chicken", phone: null, totalKg: 25, totalOrders: 1 },
+  {
+    id: "a",
+    name: "Alpha Meats",
+    phone: null,
+    totalDue: 1400,
+    totalKg: 42,
+    totalOrders: 2,
+    totalPaid: 7870,
+    totalRevenue: 9270,
+  },
+  {
+    id: "b",
+    name: "Beta Chicken",
+    phone: null,
+    totalDue: 210,
+    totalKg: 25,
+    totalOrders: 1,
+    totalPaid: 2000,
+    totalRevenue: 2210,
+  },
 ];
 
 const orders: HistoryOrder[] = [
@@ -19,6 +37,8 @@ const orders: HistoryOrder[] = [
     quantityKg: 12,
     ratePerKg: 220,
     totalAmount: 2640,
+    paymentAmount: 2000,
+    balanceDue: 640,
     notes: null,
   },
   {
@@ -29,6 +49,8 @@ const orders: HistoryOrder[] = [
     quantityKg: 10,
     ratePerKg: 221,
     totalAmount: 2210,
+    paymentAmount: 2000,
+    balanceDue: 210,
     notes: null,
   },
   {
@@ -39,6 +61,8 @@ const orders: HistoryOrder[] = [
     quantityKg: 30,
     ratePerKg: 221,
     totalAmount: 6630,
+    paymentAmount: 5870,
+    balanceDue: 760,
     notes: null,
   },
 ];
